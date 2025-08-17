@@ -1,0 +1,12 @@
+#ifndef APP_CONFIG_H
+#define APP_CONFIG_H
+
+// the configured options and settings for dotcpp
+#define APP_NAME "plyr"
+#define APP_VERSION "@plyr_VERSION_MAJOR@.@plyr_VERSION_MINOR@.@plyr_VERSION_PATCH@"
+#define APP_VERSION_MAJOR "@plyr_VERSION_MAJOR@"
+#define APP_VERSION_MINOR "@plyr_VERSION_MINOR@"
+#define APP_VERSION_PATCH "@plyr_VERSION_PATCH@"
+
+#endif // APP_CONFIG_H
+
