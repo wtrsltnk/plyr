@@ -12,13 +12,14 @@ add_executable(plyr
     include/entities.hpp
     include/glprogram.hpp
     include/glshader.hpp
-    include/iphysicsservice.hpp
     include/vertexarray.hpp
     src/app-infra.cpp
     src/app.cpp
+    src/audio_sdl.c
+    src/audio_sdl.h
+    src/decode.c
+    src/decode.h
     src/glad.c
-    src/services/physicsservice.cpp
-    src/services/physicsservice.hpp
     src/program.cpp
     src/vertexarray.cpp
 )
@@ -26,12 +27,19 @@ add_executable(plyr
 target_compile_features(plyr
     PRIVATE
         cxx_nullptr
-        cxx_std_17  # EnTT needs this
+        cxx_std_23
+)
+
+target_compile_definitions(plyr
+    PRIVATE
+        UNICODE
 )
 
 target_include_directories(plyr
     PRIVATE
         "include"
+        "thirdparty/IconFontCppHeaders"
+        "thirdparty/minimp3/include"
         "${PROJECT_BINARY_DIR}"
 )
 
@@ -39,13 +47,6 @@ target_link_libraries(plyr
     PRIVATE
         glm
         imgui
-        SDL2-static
-        BulletDynamics
-        BulletCollision
-        BulletSoftBody
-        LinearMath
-        bullet3
-        EnTT
-
+        SDL3::SDL3-static
 )
 

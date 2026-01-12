@@ -2,14 +2,17 @@
 #define APP_H
 
 #include <chrono>
+#include <filesystem>
 #include <glm/glm.hpp>
 #include <glprogram.hpp>
-#include <iphysicsservice.hpp>
-#include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 #include <vertexarray.hpp>
+
+#include <imgui.h>
+
+#include <IconsFontaudio.h>
+#include <IconsLucide.h>
 
 class App
 {
@@ -19,6 +22,7 @@ public:
 
     bool Init();
     int Run();
+    void Quit();
 
     void OnInit();
     void OnFrame(std::chrono::nanoseconds diff);
@@ -28,25 +32,43 @@ public:
     template <class T>
     T *GetWindowHandle() const;
 
+    static void *_render;
+    static std::vector<std::filesystem::path> _playlist;
+
 protected:
     const std::vector<std::string> &_args;
     glm::mat4 _projection;
-    std::unique_ptr<GlProgram> _program;
-    std::unique_ptr<VertexArray> _vertexArray;
-    entt::registry _registry;
-    std::unique_ptr<IPhysicsService> _physics;
-
-    entt::entity AddObject(
-        float mass,
-        const glm::vec3 &size,
-        const glm::vec3 &startPos);
+    int _width = 0;
+    int _height = 0;
 
     template <class T>
     void SetWindowHandle(T *handle);
 
     void ClearWindowHandle();
+    ImFont *fad_icon_font = nullptr;
+    ImFont *header_font = nullptr;
 
-    static float vertices[216];
+    float headerOffset = 0;
+    void PlayPlaylistItem(int index);
+
+    void RenderFrame();
+
+private:
+    int playState = 0;
+    std::string _currentPlaying;
+    int _selected = 0;
+    float progress = 0.0f;
+    bool findingFile = false;
+    std::filesystem::path findFileStartDir;
+    int selectedFile = 0;
+    std::vector<std::filesystem::path> filesInCurrentDir;
+
+    void DrawTitleTicker();
+    void DrawPlaybackControls();
+    void DrawClock();
+    void DrawTimeline();
+    void DrawPlaylist();
+    void DrawFileSelector();
 
 private:
     void *_windowHandle;

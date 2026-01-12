@@ -5,8 +5,15 @@
 #include <string>
 #include <vector>
 
+#include "audio_sdl.h"
+
 int main(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; i++)
+        App::_playlist.push_back(argv[i]);
+
+    sdl_audio_init(&App::_render, 44100, 2, 0, 0);
+
     const std::vector<std::string> args(argv + 1, argv + argc);
     App app(args);
 
@@ -19,5 +26,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    return app.Run();
+    auto result = app.Run();
+    sdl_audio_release(App::_render);
+
+    return result;
 }

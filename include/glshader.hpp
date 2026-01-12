@@ -1,7 +1,6 @@
 #ifndef GLSHADER_HPP
 #define GLSHADER_HPP
 
-#include <entt/entt.hpp>
 #include <glad/glad.h>
 #include <iostream>
 #include <vector>
