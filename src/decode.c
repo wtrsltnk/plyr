@@ -73,4 +73,5 @@ int close_dec(decoder *dec)
 {
     mp3dec_ex_close(&dec->mp3d);
     memset(dec, 0, sizeof(*dec));
+    return 1;
 }

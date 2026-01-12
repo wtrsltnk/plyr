@@ -13,7 +13,6 @@ typedef struct audio_ctx
     SDL_AudioSpec spec;
 
     decoder *dec;
-    decoder *next_dec;
 
     bool running;
 } audio_ctx;
@@ -63,18 +62,6 @@ void audio_pump(
 
     int decoded_samples = decode_samples(ctx->dec, buffer, want);
     int decoded_bytes = decoded_samples * sizeof(mp3d_sample_t);
-
-    if (decoded_bytes < want && ctx->next_dec) {
-        ctx->dec = ctx->next_dec;
-        ctx->next_dec = NULL;
-
-        int more_samples = decode_samples(
-            ctx->dec,
-            buffer + decoded_bytes,
-            want - decoded_bytes
-            );
-        decoded_bytes += more_samples * sizeof(mp3d_sample_t);
-    }
 
     SDL_PutAudioStreamData(ctx->stream, buffer, decoded_bytes);
     SDL_free(buffer);
@@ -150,7 +137,7 @@ void sdl_audio_release(void *audio_render)
     audio_ctx *ctx = (audio_ctx *)audio_render;
     if (!ctx) return;
 
-    // 🚨 stop all future audio_pump calls
+    // Stop all future audio_pump calls
     ctx->running = false;
 
     if (ctx->dev) {
