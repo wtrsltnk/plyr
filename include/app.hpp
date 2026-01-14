@@ -14,6 +14,12 @@
 #include <IconsFontaudio.h>
 #include <IconsLucide.h>
 
+enum ePlaylistMode
+{
+    Playlist,
+    FindFile,
+};
+
 class App
 {
 public:
@@ -34,12 +40,17 @@ public:
 
     static void *_render;
     static std::vector<std::filesystem::path> _playlist;
+    static int _current_playing_index;
 
 protected:
     const std::vector<std::string> &_args;
     glm::mat4 _projection;
     int _width = 0;
     int _height = 0;
+    int _requestedHeight = 0;
+    bool _isCollapsed = false;
+    const int collapsedHeight = 180;
+    const int expandedHeight = 768;
 
     template <class T>
     void SetWindowHandle(T *handle);
@@ -50,6 +61,7 @@ protected:
 
     float headerOffset = 0;
     void PlayPlaylistItem(int index);
+    static void OnSongEnded(void *userdata);
 
     void RenderFrame();
 
@@ -58,17 +70,25 @@ private:
     std::string _currentPlaying;
     int _selected = 0;
     float progress = 0.0f;
-    bool findingFile = false;
+    ePlaylistMode playlistMode = ePlaylistMode::Playlist;
     std::filesystem::path findFileStartDir;
+    std::filesystem::path _fileRoot;
     int selectedFile = 0;
+    std::vector<std::filesystem::path> foldersInCurrentDir;
     std::vector<std::filesystem::path> filesInCurrentDir;
 
     void DrawTitleTicker();
     void DrawPlaybackControls();
     void DrawClock();
+    void DrawSpectrum();
     void DrawTimeline();
     void DrawPlaylist();
     void DrawFileSelector();
+
+    void OpenSelectedFile();
+    void ListFoldersAndFiles();
+
+    void SetWindowHeight(int height);
 
 private:
     void *_windowHandle;

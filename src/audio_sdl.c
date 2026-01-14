@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 #include <stdio.h>
-#include <string.h>
 
 typedef struct audio_ctx
 {
@@ -14,7 +13,11 @@ typedef struct audio_ctx
 
     decoder *dec;
 
+    audio_end_callback end_callback;
+    void *callback_userdata;
+
     bool running;
+    bool song_ended;
 } audio_ctx;
 
 
@@ -65,6 +68,17 @@ void audio_pump(
 
     SDL_PutAudioStreamData(ctx->stream, buffer, decoded_bytes);
     SDL_free(buffer);
+
+    if (decoded_samples == 0 && !ctx->song_ended)
+    {
+        ctx->song_ended = true;
+        printf("Song ended\n");
+
+        if (ctx->end_callback)
+        {
+            ctx->end_callback(ctx->callback_userdata);
+        }
+    }
 }
 
 
@@ -161,6 +175,7 @@ void sdl_audio_set_dec(
 {
     audio_ctx *ctx = (audio_ctx *)audio_render;
     ctx->dec = dec;
+    ctx->song_ended = false;  // Reset flag when new decoder is set
 }
 
 /* ============================================================
@@ -201,6 +216,21 @@ void sdl_audio_update_stream_format(
     } else {
         printf("error: couldn't recreate audio stream: %s\n", SDL_GetError());
     }
+}
+
+/* ============================================================
+   Set end callback
+   ============================================================ */
+void sdl_audio_set_end_callback(
+    void *audio_render,
+    audio_end_callback callback,
+    void *userdata)
+{
+    audio_ctx *ctx = (audio_ctx *)audio_render;
+    if (!ctx) return;
+
+    ctx->end_callback = callback;
+    ctx->callback_userdata = userdata;
 }
 
 /* ============================================================

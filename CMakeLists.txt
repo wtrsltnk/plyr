@@ -50,3 +50,12 @@ target_link_libraries(plyr
         SDL3::SDL3-static
 )
 
+# Test/diagnostic executables
+add_executable(check_file
+    check_file.c
+)
+
+add_executable(check_after_id3
+    check_after_id3.c
+)
+

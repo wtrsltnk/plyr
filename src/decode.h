@@ -20,6 +20,7 @@ extern decoder _dec;
 int open_dec(decoder *dec, const char *file_name);
 int close_dec(decoder *dec);
 int decode_samples(decoder *dec, uint8_t *buf, int bytes);
+void decay_spectrum(decoder *dec);
 
 #ifdef __cplusplus
 }

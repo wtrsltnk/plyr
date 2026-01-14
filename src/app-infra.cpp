@@ -18,8 +18,34 @@
 
 static char szProgramName[] = "plyr";
 
+// SDL3 hit test callback for custom title bar dragging
+static SDL_HitTestResult SDLCALL HitTestCallback(SDL_Window *window, const SDL_Point *pt, void *data)
+{
+    const int titleBarHeight = 40; // Approximate ImGui title bar height
+    const int closeButtonWidth = 50; // Reserve space for close button on the right
+
+    // Get window size
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+
+    // Top area is draggable (title bar), but exclude close button area
+    if (pt->y < titleBarHeight)
+    {
+        // Don't make the close button area draggable (top-right corner)
+        if (pt->x > w - closeButtonWidth)
+        {
+            return SDL_HITTEST_NORMAL; // Allow clicks on close button
+        }
+
+        return SDL_HITTEST_DRAGGABLE;
+    }
+
+    return SDL_HITTEST_NORMAL;
+}
+
 void *App::_render = nullptr;
 std::vector<std::filesystem::path> App::_playlist;
+int App::_current_playing_index = -1;
 
 struct WindowHandle
 {
@@ -28,7 +54,27 @@ struct WindowHandle
 
 App::App(const std::vector<std::string> &args)
     : _args(args)
-{}
+{
+    // Initialize file root from command-line args or use default
+    if (args.size() > 1)
+    {
+        std::filesystem::path candidate(args[1]);
+        if (std::filesystem::exists(candidate) && std::filesystem::is_directory(candidate))
+        {
+            _fileRoot = std::filesystem::canonical(candidate);
+            std::cout << "Using music folder: " << _fileRoot.string() << std::endl;
+        }
+        else
+        {
+            std::cerr << "Warning: '" << args[1] << "' is not a valid directory, using default" << std::endl;
+            _fileRoot = std::filesystem::current_path();
+        }
+    }
+    else
+    {
+        _fileRoot = std::filesystem::current_path();
+    }
+}
 
 App::~App() = default;
 
@@ -98,7 +144,7 @@ bool App::Init()
         szProgramName,
         1024,
         768,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+        SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
     if (window == 0)
     {
@@ -138,6 +184,11 @@ bool App::Init()
     SetWindowHandle(new WindowHandle({
         window,
     }));
+
+    // Enable custom hit testing for borderless window dragging
+    SDL_SetWindowHitTest(window, HitTestCallback, nullptr);
+
+    SDL_SetWindowMinimumSize(window, 0, collapsedHeight);
 
     float baseFontSize = 20.0f;
     // Setup Dear ImGui context
@@ -206,6 +257,8 @@ bool App::Init()
     style.Colors[ImGuiCol_ButtonHovered] = style.Colors[ImGuiCol_FrameBgHovered];
     style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
     style.Colors[ImGuiCol_Border] = ImVec4(0.26f, 0.26f, 0.26f, 0.00f);
+    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(38.0f / 255.0f, 78.0f / 255.0f, 172.0f / 255.0f, 1.0f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(38.0f / 255.0f, 78.0f / 255.0f, 172.0f / 255.0f, 0.3f);
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL3_InitForOpenGL(window, context);
@@ -233,6 +286,11 @@ bool App::Init()
     OnResize(1024, 768);
 
     return true;
+}
+
+void App::SetWindowHeight(int height)
+{
+    _requestedHeight = height;
 }
 
 int App::Run()
@@ -283,6 +341,20 @@ int App::Run()
 
         RenderFrame();
 
+        if (_requestedHeight > 0)
+        {
+            SDL_SetWindowResizable(windowHandle->window, _requestedHeight != collapsedHeight);
+
+            int h, w;
+            SDL_GetWindowSize(windowHandle->window, &w, &h);
+
+            SDL_SetWindowSize(windowHandle->window, w, _requestedHeight);
+            OnResize(w, _requestedHeight);
+            _requestedHeight = 0;
+
+            RenderFrame();
+        }
+
         SDL_GL_SwapWindow(windowHandle->window);
     }
 
@@ -295,7 +367,7 @@ int App::Run()
 
 void App::RenderFrame()
 {
-    auto prev = std::chrono::steady_clock::now();
+    static auto prev = std::chrono::steady_clock::now();
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();

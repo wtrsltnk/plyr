@@ -10,11 +10,16 @@
 int main(int argc, char *argv[])
 {
     for (int i = 1; i < argc; i++)
-        App::_playlist.push_back(argv[i]);
+    {
+        if (std::filesystem::is_regular_file(argv[i]))
+        {
+            App::_playlist.push_back(argv[i]);
+        }
+    }
 
     sdl_audio_init(&App::_render, 44100, 2, 0, 0);
 
-    const std::vector<std::string> args(argv + 1, argv + argc);
+    const std::vector<std::string> args(argv, argv + argc);
     App app(args);
 
     std::cout << APP_NAME << " version " << APP_VERSION << std::endl;
