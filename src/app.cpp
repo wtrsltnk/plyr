@@ -14,60 +14,6 @@
 
 decoder _dec;
 
-void App::OnSongEnded(void *userdata)
-{
-    App *app = static_cast<App *>(userdata);
-
-    // Auto-advance to next song
-    if (_current_playing_index >= 0 && _playlist.size() > 0)
-    {
-        int attempts = 0;
-        const int max_attempts = _playlist.size();
-
-        while (attempts < max_attempts)
-        {
-            _current_playing_index = (_current_playing_index + 1) % _playlist.size();
-            auto playing = _playlist[_current_playing_index];
-
-            sdl_audio_set_dec(_render, 0);
-
-            if (open_dec(&_dec, playing.string().c_str()))
-            {
-                // Successfully opened the file
-                sdl_audio_update_stream_format(_render, _dec.mp3d.info.hz, _dec.mp3d.info.channels);
-                sdl_audio_set_dec(_render, &_dec);
-
-                // Update UI to match current song
-                if (app)
-                {
-                    app->_selected = _current_playing_index;
-                    app->_currentPlaying = playing.filename().string();
-                    app->headerOffset = 0;
-                }
-                break;
-            }
-            else
-            {
-                // Failed to open, try next song
-                printf("Error: Failed to open MP3 file during auto-play: %s\n", playing.string().c_str());
-                attempts++;
-            }
-        }
-
-        if (attempts >= max_attempts)
-        {
-            // All files failed to open
-            printf("Error: All files in playlist failed to open\n");
-            _current_playing_index = -1;
-            if (app)
-            {
-                app->playState = 0;
-                app->_currentPlaying = "No playable files";
-            }
-        }
-    }
-}
-
 void App::OnInit()
 {
     glClearColor(0.56f, 0.7f, 0.67f, 1.0f);
@@ -128,6 +74,33 @@ void App::OnFrame(
             sdl_audio_pause(_render, 0);
             playState = 1;
         }
+        else
+        {
+            PlayPlaylistItem(_selected);
+        }
+    }
+
+    float seconds = 10.0f * (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) ? 6.0f : 1.0f);
+
+    float stepSize = ((1.0f / _dec.mp3d.samples) * (_dec.mp3d.info.hz * _dec.mp3d.info.channels)) * seconds;
+
+    if (playState == 1 && ImGui::IsKeyPressed(ImGuiKey_RightArrow, true))
+    {
+        progress += stepSize;
+        mp3dec_ex_seek(&_dec.mp3d, uint64_t(progress * _dec.mp3d.samples));
+    }
+
+    if (playState == 1 && ImGui::IsKeyPressed(ImGuiKey_LeftArrow, true))
+    {
+        progress -= stepSize;
+        mp3dec_ex_seek(&_dec.mp3d, uint64_t(progress * _dec.mp3d.samples));
+    }
+
+    if (ImGui::IsKeyPressed(ImGuiKey_O, false) // ctrl+o
+        && (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)))
+    {
+        playlistMode = ePlaylistMode::FindFile;
+        ListFoldersAndFiles();
     }
 
     static bool is_open = true;
@@ -135,7 +108,7 @@ void App::OnFrame(
     // Always position ImGui window at (0,0) to fill the SDL window
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(_width, _height));
-    ImGui::Begin("plyr", &is_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+    ImGui::Begin("plyr", &is_open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
 
     DrawTitleTicker();
 
@@ -238,7 +211,7 @@ void App::DrawPlaybackControls()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_LIST_MUSIC))
+    if (ImGui::Button(ICON_LC_LIST_MUSIC) || (ImGui::IsKeyPressed(ImGuiKey_P) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl)))
     {
         if (_isCollapsed)
         {
@@ -423,33 +396,51 @@ void App::DrawTimeline()
 
 void App::ListFoldersAndFiles()
 {
-    foldersInCurrentDir.clear();
-    filesInCurrentDir.clear();
+    if (findFileStartDir.empty())
+    {
+        findFileStartDir = _fileRoot;
+    }
+
+    foldersAndFilesInCurrentDir.clear();
 
     auto diritr = std::filesystem::directory_iterator(findFileStartDir);
 
     if (std::filesystem::canonical(findFileStartDir).compare(_fileRoot) > 0)
     {
-        foldersInCurrentDir.push_back(findFileStartDir / "..");
+        foldersAndFilesInCurrentDir.push_back(findFileStartDir / "..");
     }
 
     for (const auto &entry : diritr)
     {
-        if (entry.is_directory())
-        {
-            foldersInCurrentDir.push_back(entry.path());
-        }
-        if (entry.is_regular_file())
-        {
-            filesInCurrentDir.push_back(entry.path());
-        }
+        foldersAndFilesInCurrentDir.push_back(entry.path());
     }
 }
 
 void App::DrawPlaylist()
 {
+    if (playlistMode == ePlaylistMode::Playlist && _playlist.size() >= 0)
+    {
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true))
+        {
+            _selected -= 1;
+            if (_selected < 0) _selected = 0;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true))
+        {
+            _selected += 1;
+            if (_selected >= _playlist.size()) _selected = _playlist.size() - 1;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_Enter, false))
+        {
+            if (_selected >= 0)
+            {
+                PlayPlaylistItem(_selected);
+            }
+        }
+    }
+
     // Playlist
-    ImGui::BeginChild(23, ImVec2(0, -50.0f), true);
+    ImGui::BeginChild(23, ImVec2(0, -50.0f), true, ImGuiWindowFlags_NoSavedSettings);
     for (size_t i = 0; i < _playlist.size(); i++)
     {
         auto f = std::filesystem::path(_playlist[i]);
@@ -472,10 +463,7 @@ void App::DrawPlaylist()
 
     if (ImGui::Button(ICON_LC_FOLDER))
     {
-        selectedFile = -1;
         playlistMode = ePlaylistMode::FindFile;
-
-        findFileStartDir = _fileRoot;
         ListFoldersAndFiles();
     }
 
@@ -575,7 +563,35 @@ void App::DrawFileSelector()
 {
     std::filesystem::path openFolder = {};
 
-    ImGui::BeginChild(23, ImVec2(0, -50.0f), true);
+    if (playlistMode == ePlaylistMode::FindFile)
+    {
+        if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, true))
+        {
+            selectedFile -= 1;
+            if (selectedFile < 0) selectedFile = 0;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, true))
+        {
+            selectedFile += 1;
+            if (selectedFile >= foldersAndFilesInCurrentDir.size()) selectedFile = foldersAndFilesInCurrentDir.size() - 1;
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_Enter, false))
+        {
+            if (selectedFile >= 0)
+            {
+                if (std::filesystem::is_directory(foldersAndFilesInCurrentDir[selectedFile]))
+                {
+                    openFolder = foldersAndFilesInCurrentDir[selectedFile];
+                }
+                else
+                {
+                    OpenSelectedFile();
+                }
+            }
+        }
+    }
+
+    ImGui::BeginChild(23, ImVec2(0, -50.0f), true, ImGuiWindowFlags_NoSavedSettings);
 
     ImGui::Text("Open Song or playlist");
 
@@ -583,7 +599,7 @@ void App::DrawFileSelector()
 
     int i = 0;
 
-    for (const auto &entry : foldersInCurrentDir)
+    for (const auto &entry : foldersAndFilesInCurrentDir)
     {
         if (entry.empty()) continue;
 
@@ -600,34 +616,14 @@ void App::DrawFileSelector()
 
         if (ImGui::IsItemActive() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
-            openFolder = entry;
-        }
-
-        ImGui::PopID();
-
-        i++;
-    }
-
-    i = 0;
-
-    for (const auto &entry : filesInCurrentDir)
-    {
-        if (entry.empty()) continue;
-
-        auto file = entry.filename();
-
-        auto fn = file.wstring();
-        const std::string s(fn.begin(), fn.end());
-
-        ImGui::PushID(s.c_str());
-        if (ImGui::Selectable(s.c_str(), selectedFile == i))
-        {
-            selectedFile = i;
-        }
-
-        if (ImGui::IsItemActive() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-        {
-            OpenSelectedFile();
+            if (std::filesystem::is_directory(entry))
+            {
+                openFolder = entry;
+            }
+            else
+            {
+                OpenSelectedFile();
+            }
         }
 
         ImGui::PopID();
@@ -653,6 +649,7 @@ void App::DrawFileSelector()
     {
         findFileStartDir = std::filesystem::canonical(openFolder);
         ListFoldersAndFiles();
+        selectedFile = -1;
 
         openFolder.clear();
     }
@@ -664,7 +661,7 @@ void App::OpenSelectedFile()
 
     if (selectedFile < 0) return;
 
-    auto file = _fileRoot / filesInCurrentDir[selectedFile];
+    auto file = _fileRoot / foldersAndFilesInCurrentDir[selectedFile];
 
     // Validate file exists and is a regular file
     if (!std::filesystem::exists(file))
@@ -717,6 +714,60 @@ void App::PlayPlaylistItem(int index)
 
     playState = 1;
     headerOffset = 0;
+}
+
+void App::OnSongEnded(void *userdata)
+{
+    App *app = static_cast<App *>(userdata);
+
+    // Auto-advance to next song
+    if (_current_playing_index >= 0 && _playlist.size() > 0)
+    {
+        int attempts = 0;
+        const int max_attempts = _playlist.size();
+
+        while (attempts < max_attempts)
+        {
+            _current_playing_index = (_current_playing_index + 1) % _playlist.size();
+            auto playing = _playlist[_current_playing_index];
+
+            sdl_audio_set_dec(_render, 0);
+
+            if (open_dec(&_dec, playing.string().c_str()))
+            {
+                // Successfully opened the file
+                sdl_audio_update_stream_format(_render, _dec.mp3d.info.hz, _dec.mp3d.info.channels);
+                sdl_audio_set_dec(_render, &_dec);
+
+                // Update UI to match current song
+                if (app)
+                {
+                    app->_selected = _current_playing_index;
+                    app->_currentPlaying = playing.filename().string();
+                    app->headerOffset = 0;
+                }
+                break;
+            }
+            else
+            {
+                // Failed to open, try next song
+                printf("Error: Failed to open MP3 file during auto-play: %s\n", playing.string().c_str());
+                attempts++;
+            }
+        }
+
+        if (attempts >= max_attempts)
+        {
+            // All files failed to open
+            printf("Error: All files in playlist failed to open\n");
+            _current_playing_index = -1;
+            if (app)
+            {
+                app->playState = 0;
+                app->_currentPlaying = "No playable files";
+            }
+        }
+    }
 }
 
 void App::OnExit()

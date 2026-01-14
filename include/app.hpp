@@ -74,8 +74,7 @@ private:
     std::filesystem::path findFileStartDir;
     std::filesystem::path _fileRoot;
     int selectedFile = 0;
-    std::vector<std::filesystem::path> foldersInCurrentDir;
-    std::vector<std::filesystem::path> filesInCurrentDir;
+    std::vector<std::filesystem::path> foldersAndFilesInCurrentDir;
 
     void DrawTitleTicker();
     void DrawPlaybackControls();

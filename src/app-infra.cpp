@@ -21,7 +21,7 @@ static char szProgramName[] = "plyr";
 // SDL3 hit test callback for custom title bar dragging
 static SDL_HitTestResult SDLCALL HitTestCallback(SDL_Window *window, const SDL_Point *pt, void *data)
 {
-    const int titleBarHeight = 40; // Approximate ImGui title bar height
+    const int titleBarHeight = 40;   // Approximate ImGui title bar height
     const int closeButtonWidth = 50; // Reserve space for close button on the right
 
     // Get window size
@@ -154,6 +154,8 @@ bool App::Init()
 
         return false;
     }
+
+    SDL_SetWindowProgressState(window, SDL_ProgressState::SDL_PROGRESS_STATE_PAUSED);
 
     // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -327,6 +329,20 @@ int App::Run()
         }
 
         audio_pump(&App::_render);
+
+        if (playState == 1)
+        {
+            SDL_SetWindowProgressState(windowHandle->window, SDL_ProgressState::SDL_PROGRESS_STATE_NORMAL);
+            SDL_SetWindowProgressValue(windowHandle->window, progress);
+        }
+        else if (playState == 2)
+        {
+            SDL_SetWindowProgressState(windowHandle->window, SDL_ProgressState::SDL_PROGRESS_STATE_PAUSED);
+        }
+        else
+        {
+            SDL_SetWindowProgressState(windowHandle->window, SDL_ProgressState::SDL_PROGRESS_STATE_NONE);
+        }
 
         int w, h;
         SDL_GetWindowSize(windowHandle->window, &w, &h);
