@@ -25,6 +25,12 @@ A sleek, minimalist MP3 player built with modern C++ that brings back the joy of
 
 ### ⌨️ Keyboard Shortcuts
 - **Space** - Play/Pause toggle
+- **Left/Right Arrow** - Seek backward/forward 10 seconds
+- **Ctrl + Left/Right Arrow** - Seek backward/forward 60 seconds
+- **Up/Down Arrow** - Navigate playlist or file browser
+- **Enter** - Play selected track / Open selected item
+- **Ctrl+O** - Open file browser
+- **Ctrl+P** - Toggle playlist view
 - **Mouse drag** - Seek through tracks via timeline
 
 ### 🎼 Visual Feedback

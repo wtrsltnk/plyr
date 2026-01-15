@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.21)
 
-project(plyr VERSION "0.2.0")
+project(plyr LANGUAGES CXX C VERSION "0.2.0")
 
 include(cmake/CPM.cmake)
 include(cmake/Dependencies.cmake)
@@ -23,6 +23,10 @@ add_executable(plyr
     src/program.cpp
     src/vertexarray.cpp
 )
+
+if (WIN32)
+    target_sources(plyr PRIVATE resources/app.rc)
+endif()
 
 target_compile_features(plyr
     PRIVATE

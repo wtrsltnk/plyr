@@ -10,6 +10,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <thread>
 
 #include "audio_sdl.h"
 
@@ -143,7 +144,7 @@ bool App::Init()
     auto window = SDL_CreateWindow(
         szProgramName,
         1024,
-        768,
+        collapsedHeight,
         SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
     if (window == 0)
@@ -255,12 +256,17 @@ bool App::Init()
     // ImGui::StyleColorsClassic();
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-    style.Colors[ImGuiCol_Button] = ImVec4(0.26f, 0.26f, 0.26f, 0.40f);
-    style.Colors[ImGuiCol_ButtonHovered] = style.Colors[ImGuiCol_FrameBgHovered];
-    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
     style.Colors[ImGuiCol_Border] = ImVec4(0.26f, 0.26f, 0.26f, 0.00f);
-    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(38.0f / 255.0f, 78.0f / 255.0f, 172.0f / 255.0f, 1.0f);
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(38.0f / 255.0f, 78.0f / 255.0f, 172.0f / 255.0f, 0.3f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(15.0f / 255.0f, 27.0f / 255.0f, 67.0f / 255.0f, 0.6f);
+    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(76.0f / 255.0f, 35.0f / 255.0f, 113.0f / 255.0f, 1.0f);
+    style.Colors[ImGuiCol_Button] = ImVec4(34.0f / 255.0f, 29.0f / 255.0f, 95.0f / 255.0f, 0.3f);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(88.0f / 255.0f, 45.0f / 255.0f, 122.0f / 255.0f, 0.3f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(56.0f / 255.0f, 206.0f / 255.0f, 248.0f / 255.0f, 0.3f);
+    style.Colors[ImGuiCol_Header] = style.Colors[ImGuiCol_Button];
+    style.Colors[ImGuiCol_HeaderActive] = style.Colors[ImGuiCol_ButtonActive];
+    style.Colors[ImGuiCol_HeaderHovered] = style.Colors[ImGuiCol_ButtonHovered];
+    style.Colors[ImGuiCol_TitleBg] = ImVec4(33.0f / 255.0f, 34.0f / 255.0f, 91.0f / 255.0f, 1.0f);
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(33.0f / 255.0f, 34.0f / 255.0f, 91.0f / 255.0f, 1.0f);
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL3_InitForOpenGL(window, context);
@@ -301,6 +307,15 @@ int App::Run()
 
     auto windowHandle = std::unique_ptr<WindowHandle>(GetWindowHandle<WindowHandle>());
 
+    std::thread t1([&running] {
+        while (running)
+        {
+            audio_pump(&App::_render);
+
+            SDL_Delay(10);
+        }
+    });
+
     int cachedW = 0, cachedH = 0;
     while (running)
     {
@@ -328,8 +343,6 @@ int App::Run()
             ImGui_ImplSDL3_ProcessEvent(&event);
         }
 
-        audio_pump(&App::_render);
-
         if (playState == 1)
         {
             SDL_SetWindowProgressState(windowHandle->window, SDL_ProgressState::SDL_PROGRESS_STATE_NORMAL);
@@ -355,6 +368,8 @@ int App::Run()
 
         SDL_Delay(10);
 
+        glClearColor(0, 0, 0, 0);
+
         RenderFrame();
 
         if (_requestedHeight > 0)
@@ -373,6 +388,10 @@ int App::Run()
 
         SDL_GL_SwapWindow(windowHandle->window);
     }
+
+    running = false;
+
+    t1.join();
 
     ClearWindowHandle();
 

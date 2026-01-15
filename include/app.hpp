@@ -48,7 +48,7 @@ protected:
     int _width = 0;
     int _height = 0;
     int _requestedHeight = 0;
-    bool _isCollapsed = false;
+    bool _isCollapsed = true;
     const int collapsedHeight = 180;
     const int expandedHeight = 768;
 
