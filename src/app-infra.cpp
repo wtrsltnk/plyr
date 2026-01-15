@@ -207,42 +207,15 @@ bool App::Init()
     // 13.0f is the size of the default font. Change to the font size you use.
     float iconFontSize = baseFontSize;
 
-    {
-        static const ImWchar icons_ranges[] = {ICON_MIN_FAD, ICON_MAX_16_FAD, 0};
-        ImFontConfig icons_config;
-        icons_config.MergeMode = true;
-        icons_config.PixelSnapH = true;
-        icons_config.GlyphOffset.y = 5;
-        // icons_config.GlyphMinAdvanceX = iconFontSize;
-        //    fad_icon_font = io.Fonts->AddFontFromFileTTF("thirdparty/IconFontCppHeaders/lucide.ttf", iconFontSize, &icons_config, icons_ranges);
-        fad_icon_font = io.Fonts->AddFontFromFileTTF("thirdparty/IconFontCppHeaders/fontaudio.ttf", iconFontSize, &icons_config, icons_ranges);
-    }
-
-    {
-        static const ImWchar icons_ranges[] = {ICON_MIN_LC, ICON_MAX_16_LC, 0};
-        ImFontConfig icons_config;
-        icons_config.MergeMode = true;
-        icons_config.PixelSnapH = true;
-        icons_config.GlyphOffset.y = 5;
-        // icons_config.GlyphMinAdvanceX = iconFontSize;
-        //    fad_icon_font = io.Fonts->AddFontFromFileTTF("thirdparty/IconFontCppHeaders/lucide.ttf", iconFontSize, &icons_config, icons_ranges);
-        fad_icon_font = io.Fonts->AddFontFromFileTTF("thirdparty/IconFontCppHeaders/lucide.ttf", iconFontSize, &icons_config, icons_ranges);
-    }
-
     ImFontConfig header_config;
     header_config.MergeMode = false;
     header_config.PixelSnapH = true;
     header_config.GlyphOffset.y = 5;
-    // icons_config.GlyphMinAdvanceX = iconFontSize;
-    //    fad_icon_font = io.Fonts->AddFontFromFileTTF("thirdparty/IconFontCppHeaders/lucide.ttf", iconFontSize, &icons_config, icons_ranges);
     header_font = io.Fonts->AddFontFromFileTTF(
         fontName,
         iconFontSize + 8,
         &header_config,
         io.Fonts->GetGlyphRangesDefault());
-
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();

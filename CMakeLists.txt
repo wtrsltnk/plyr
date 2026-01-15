@@ -42,7 +42,6 @@ target_compile_definitions(plyr
 target_include_directories(plyr
     PRIVATE
         "include"
-        "thirdparty/IconFontCppHeaders"
         "thirdparty/minimp3/include"
         "${PROJECT_BINARY_DIR}"
 )

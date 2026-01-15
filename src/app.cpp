@@ -14,6 +14,63 @@
 
 decoder _dec;
 
+#define _CRT_SECURE_NO_WARNINGS
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+// Simple helper function to load an image into a OpenGL texture with common settings
+bool LoadTextureFromMemory(const void *data, size_t data_size, GLuint *out_texture, int *out_width, int *out_height)
+{
+    // Load from file
+    int image_width = 0;
+    int image_height = 0;
+    unsigned char *image_data = stbi_load_from_memory((const unsigned char *)data, (int)data_size, &image_width, &image_height, NULL, 4);
+    if (image_data == NULL)
+        return false;
+
+    // Create a OpenGL texture identifier
+    GLuint image_texture;
+    glGenTextures(1, &image_texture);
+    glBindTexture(GL_TEXTURE_2D, image_texture);
+
+    // Setup filtering parameters for display
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Upload pixels into texture
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width, image_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+    stbi_image_free(image_data);
+
+    *out_texture = image_texture;
+    *out_width = image_width;
+    *out_height = image_height;
+
+    return true;
+}
+
+// Open and read a file, then forward to LoadTextureFromMemory()
+bool LoadTextureFromFile(const char *file_name, GLuint *out_texture, int *out_width, int *out_height)
+{
+    FILE *f = fopen(file_name, "rb");
+    if (f == NULL)
+        return false;
+    fseek(f, 0, SEEK_END);
+    size_t file_size = (size_t)ftell(f);
+    if (file_size == -1)
+        return false;
+    fseek(f, 0, SEEK_SET);
+    void *file_data = IM_ALLOC(file_size);
+    fread(file_data, 1, file_size, f);
+    fclose(f);
+    bool ret = LoadTextureFromMemory(file_data, file_size, out_texture, out_width, out_height);
+    IM_FREE(file_data);
+    return ret;
+}
+
+ImTextureRef pauseImage, playImage, squareImage, skipForwardImage, skipBackImage, listMusicImage, settingsImage;
+ImTextureRef folderImage, searchImage, trashImage, floppyImage, copyPlusImage, shuffleImage, arrowUpImage, arrowDownImage;
+
 void App::OnInit()
 {
     glClearColor(0.56f, 0.7f, 0.67f, 1.0f);
@@ -21,6 +78,55 @@ void App::OnInit()
 
     // Set up auto-play callback with this App instance
     sdl_audio_set_end_callback(_render, &App::OnSongEnded, this);
+
+    int my_image_width = 0;
+    int my_image_height = 0;
+    GLuint my_image_texture = 0;
+
+    IM_ASSERT(LoadTextureFromFile("resources/pause.png", &my_image_texture, &my_image_width, &my_image_height));
+    pauseImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/play.png", &my_image_texture, &my_image_width, &my_image_height));
+    playImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/square.png", &my_image_texture, &my_image_width, &my_image_height));
+    squareImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/skip-forward.png", &my_image_texture, &my_image_width, &my_image_height));
+    skipForwardImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/skip-back.png", &my_image_texture, &my_image_width, &my_image_height));
+    skipBackImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/list-music.png", &my_image_texture, &my_image_width, &my_image_height));
+    listMusicImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/settings.png", &my_image_texture, &my_image_width, &my_image_height));
+    settingsImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/folder.png", &my_image_texture, &my_image_width, &my_image_height));
+    folderImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/search.png", &my_image_texture, &my_image_width, &my_image_height));
+    searchImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/trash.png", &my_image_texture, &my_image_width, &my_image_height));
+    trashImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/floppy.png", &my_image_texture, &my_image_width, &my_image_height));
+    floppyImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/copy-plus.png", &my_image_texture, &my_image_width, &my_image_height));
+    copyPlusImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/shuffle.png", &my_image_texture, &my_image_width, &my_image_height));
+    shuffleImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/arrow-up.png", &my_image_texture, &my_image_width, &my_image_height));
+    arrowUpImage = (ImTextureID)(intptr_t)my_image_texture;
+
+    IM_ASSERT(LoadTextureFromFile("resources/arrow-down.png", &my_image_texture, &my_image_width, &my_image_height));
+    arrowDownImage = (ImTextureID)(intptr_t)my_image_texture;
 }
 
 void App::OnResize(
@@ -150,7 +256,7 @@ void App::DrawPlaybackControls()
 {
     if (playState == 1)
     {
-        if (ImGui::Button(ICON_LC_PAUSE))
+        if (ImGui::ImageButton("pause", pauseImage, ImVec2(24, 24)))
         {
             sdl_audio_pause(_render, 1);
             playState = 2;
@@ -158,7 +264,7 @@ void App::DrawPlaybackControls()
     }
     else if (playState == 2)
     {
-        if (ImGui::Button(ICON_LC_PLAY))
+        if (ImGui::ImageButton("play", playImage, ImVec2(24, 24)))
         {
             sdl_audio_pause(_render, 0);
             playState = 1;
@@ -166,22 +272,23 @@ void App::DrawPlaybackControls()
     }
     else
     {
-        if (ImGui::Button(ICON_LC_PLAY))
+        if (ImGui::ImageButton("play", playImage, ImVec2(24, 24)))
         {
             PlayPlaylistItem(_selected);
         }
     }
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_SQUARE))
+    if (ImGui::ImageButton("square", squareImage, ImVec2(24, 24)))
     {
         sdl_audio_set_dec(_render, 0);
         playState = 0;
         mp3dec_ex_seek(&_dec.mp3d, 0);
     }
+
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_SKIP_BACK))
+    if (ImGui::ImageButton("skip-back", skipBackImage, ImVec2(24, 24)))
     {
         _selected--;
         _selected = _selected % _playlist.size();
@@ -196,7 +303,7 @@ void App::DrawPlaybackControls()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_SKIP_FORWARD))
+    if (ImGui::ImageButton("skip-forward", skipForwardImage, ImVec2(24, 24)))
     {
         _selected++;
         _selected = _selected % _playlist.size();
@@ -211,7 +318,7 @@ void App::DrawPlaybackControls()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_LIST_MUSIC) || (ImGui::IsKeyPressed(ImGuiKey_P) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl)))
+    if (ImGui::ImageButton("list-music", listMusicImage, ImVec2(24, 24)) || (ImGui::IsKeyPressed(ImGuiKey_P) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl)))
     {
         if (_isCollapsed)
         {
@@ -227,6 +334,17 @@ void App::DrawPlaybackControls()
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
     {
         ImGui::SetTooltip("Show/hide the playlist");
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::ImageButton("settings", settingsImage, ImVec2(24, 24)))
+    {
+    }
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Show/hide settings");
     }
 }
 
@@ -461,7 +579,7 @@ void App::DrawPlaylist()
     }
     ImGui::EndChild();
 
-    if (ImGui::Button(ICON_LC_FOLDER))
+    if (ImGui::ImageButton("folder", folderImage, ImVec2(24, 24)))
     {
         playlistMode = ePlaylistMode::FindFile;
         ListFoldersAndFiles();
@@ -474,7 +592,18 @@ void App::DrawPlaylist()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_TRASH_2))
+    if (ImGui::ImageButton("search", searchImage, ImVec2(24, 24)))
+    {
+    }
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    {
+        ImGui::SetTooltip("Find music online");
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::ImageButton("trash", trashImage, ImVec2(24, 24)))
     {
         _playlist.erase(_playlist.begin() + _selected);
         if (_selected >= _playlist.size()) _selected = _playlist.size() - 1;
@@ -487,7 +616,7 @@ void App::DrawPlaylist()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_SAVE))
+    if (ImGui::ImageButton("floppy", floppyImage, ImVec2(24, 24)))
     {
     }
 
@@ -498,7 +627,7 @@ void App::DrawPlaylist()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_COPY))
+    if (ImGui::ImageButton("copy-plus", copyPlusImage, ImVec2(24, 24)))
     {
         auto itemToCopy = _playlist[_selected];
         _playlist.insert(_playlist.begin() + _selected + 1, itemToCopy);
@@ -511,7 +640,7 @@ void App::DrawPlaylist()
 
     ImGui::SameLine();
 
-    if (ImGui::Button(ICON_LC_SHUFFLE))
+    if (ImGui::ImageButton("shuffle", shuffleImage, ImVec2(24, 24)))
     {
     }
 
@@ -523,7 +652,7 @@ void App::DrawPlaylist()
     ImGui::SameLine();
 
     ImGui::BeginDisabled(_selected <= 0);
-    if (ImGui::Button(ICON_LC_ARROW_UP) && _selected > 0)
+    if (ImGui::ImageButton("arrow-up", arrowUpImage, ImVec2(24, 24)) && _selected > 0)
     {
         auto itemToMove = _playlist[_selected];
         _playlist.erase(_playlist.begin() + _selected);
@@ -542,7 +671,7 @@ void App::DrawPlaylist()
     ImGui::SameLine();
 
     ImGui::BeginDisabled(_selected >= _playlist.size() - 1);
-    if (ImGui::Button(ICON_LC_ARROW_DOWN) && _selected < _playlist.size() - 1)
+    if (ImGui::ImageButton("arrow-down", arrowDownImage, ImVec2(24, 24)) && _selected < _playlist.size() - 1)
     {
         auto itemToMove = _playlist[_selected];
         _playlist.erase(_playlist.begin() + _selected);

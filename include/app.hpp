@@ -11,9 +11,6 @@
 
 #include <imgui.h>
 
-#include <IconsFontaudio.h>
-#include <IconsLucide.h>
-
 enum ePlaylistMode
 {
     Playlist,
@@ -49,7 +46,7 @@ protected:
     int _height = 0;
     int _requestedHeight = 0;
     bool _isCollapsed = true;
-    const int collapsedHeight = 180;
+    const int collapsedHeight = 190;
     const int expandedHeight = 768;
 
     template <class T>
