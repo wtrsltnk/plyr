@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glprogram.hpp>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <vertexarray.hpp>
 
@@ -15,7 +16,24 @@ enum ePlaylistMode
 {
     Playlist,
     FindFile,
+    Settings,
 };
+
+extern const std::string_view arrowDownImageData;
+extern const std::string_view arrowUpImageData;
+extern const std::string_view copyPlusImageData;
+extern const std::string_view floppyImageData;
+extern const std::string_view folderImageData;
+extern const std::string_view listMusicImageData;
+extern const std::string_view pauseImageData;
+extern const std::string_view playImageData;
+extern const std::string_view searchImageData;
+extern const std::string_view settingsImageData;
+extern const std::string_view shuffleImageData;
+extern const std::string_view skipBackImageData;
+extern const std::string_view skipForwardImageData;
+extern const std::string_view squareImageData;
+extern const std::string_view trashImageData;
 
 class App
 {
@@ -80,6 +98,10 @@ private:
     void DrawTimeline();
     void DrawPlaylist();
     void DrawFileSelector();
+    void DrawSettings();
+
+    void EnsurePlaylistVisible();
+    void TogglePlaylist();
 
     void OpenSelectedFile();
     void ListFoldersAndFiles();

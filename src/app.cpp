@@ -1,5 +1,6 @@
 #include <app.hpp>
 
+#include <Base64.h>
 #include <entities.hpp>
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -25,8 +26,8 @@ bool LoadTextureFromMemory(const void *data, size_t data_size, GLuint *out_textu
     int image_width = 0;
     int image_height = 0;
     unsigned char *image_data = stbi_load_from_memory((const unsigned char *)data, (int)data_size, &image_width, &image_height, NULL, 4);
-    if (image_data == NULL)
-        return false;
+
+    if (image_data == NULL) return false;
 
     // Create a OpenGL texture identifier
     GLuint image_texture;
@@ -50,22 +51,19 @@ bool LoadTextureFromMemory(const void *data, size_t data_size, GLuint *out_textu
 }
 
 // Open and read a file, then forward to LoadTextureFromMemory()
-bool LoadTextureFromFile(const char *file_name, GLuint *out_texture, int *out_width, int *out_height)
+ImTextureID LoadTextureFromFileData(const std::string_view file_data)
 {
-    FILE *f = fopen(file_name, "rb");
-    if (f == NULL)
-        return false;
-    fseek(f, 0, SEEK_END);
-    size_t file_size = (size_t)ftell(f);
-    if (file_size == -1)
-        return false;
-    fseek(f, 0, SEEK_SET);
-    void *file_data = IM_ALLOC(file_size);
-    fread(file_data, 1, file_size, f);
-    fclose(f);
-    bool ret = LoadTextureFromMemory(file_data, file_size, out_texture, out_width, out_height);
-    IM_FREE(file_data);
-    return ret;
+    int my_image_width = 0;
+    int my_image_height = 0;
+    GLuint my_image_texture = 0;
+
+    std::string s1{file_data.data(), file_data.size()};
+    auto data = macaron::Base64::DecodeToBytes(s1);
+    bool ret = LoadTextureFromMemory(data.data(), data.size(), &my_image_texture, &my_image_width, &my_image_height);
+
+    IM_ASSERT(ret);
+
+    return (ImTextureID)(intptr_t)my_image_texture;
 }
 
 ImTextureRef pauseImage, playImage, squareImage, skipForwardImage, skipBackImage, listMusicImage, settingsImage;
@@ -79,54 +77,21 @@ void App::OnInit()
     // Set up auto-play callback with this App instance
     sdl_audio_set_end_callback(_render, &App::OnSongEnded, this);
 
-    int my_image_width = 0;
-    int my_image_height = 0;
-    GLuint my_image_texture = 0;
-
-    IM_ASSERT(LoadTextureFromFile("resources/pause.png", &my_image_texture, &my_image_width, &my_image_height));
-    pauseImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/play.png", &my_image_texture, &my_image_width, &my_image_height));
-    playImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/square.png", &my_image_texture, &my_image_width, &my_image_height));
-    squareImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/skip-forward.png", &my_image_texture, &my_image_width, &my_image_height));
-    skipForwardImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/skip-back.png", &my_image_texture, &my_image_width, &my_image_height));
-    skipBackImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/list-music.png", &my_image_texture, &my_image_width, &my_image_height));
-    listMusicImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/settings.png", &my_image_texture, &my_image_width, &my_image_height));
-    settingsImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/folder.png", &my_image_texture, &my_image_width, &my_image_height));
-    folderImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/search.png", &my_image_texture, &my_image_width, &my_image_height));
-    searchImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/trash.png", &my_image_texture, &my_image_width, &my_image_height));
-    trashImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/floppy.png", &my_image_texture, &my_image_width, &my_image_height));
-    floppyImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/copy-plus.png", &my_image_texture, &my_image_width, &my_image_height));
-    copyPlusImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/shuffle.png", &my_image_texture, &my_image_width, &my_image_height));
-    shuffleImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/arrow-up.png", &my_image_texture, &my_image_width, &my_image_height));
-    arrowUpImage = (ImTextureID)(intptr_t)my_image_texture;
-
-    IM_ASSERT(LoadTextureFromFile("resources/arrow-down.png", &my_image_texture, &my_image_width, &my_image_height));
-    arrowDownImage = (ImTextureID)(intptr_t)my_image_texture;
+    pauseImage = LoadTextureFromFileData(pauseImageData);
+    playImage = LoadTextureFromFileData(playImageData);
+    squareImage = LoadTextureFromFileData(squareImageData);
+    skipForwardImage = LoadTextureFromFileData(skipForwardImageData);
+    skipBackImage = LoadTextureFromFileData(skipBackImageData);
+    listMusicImage = LoadTextureFromFileData(listMusicImageData);
+    settingsImage = LoadTextureFromFileData(settingsImageData);
+    folderImage = LoadTextureFromFileData(folderImageData);
+    searchImage = LoadTextureFromFileData(searchImageData);
+    trashImage = LoadTextureFromFileData(trashImageData);
+    floppyImage = LoadTextureFromFileData(floppyImageData);
+    copyPlusImage = LoadTextureFromFileData(copyPlusImageData);
+    shuffleImage = LoadTextureFromFileData(shuffleImageData);
+    arrowUpImage = LoadTextureFromFileData(arrowUpImageData);
+    arrowDownImage = LoadTextureFromFileData(arrowDownImageData);
 }
 
 void App::OnResize(
@@ -240,6 +205,10 @@ void App::OnFrame(
         {
             DrawFileSelector();
         }
+        else if (playlistMode == ePlaylistMode::Settings)
+        {
+            DrawSettings();
+        }
     }
 
     ImGui::End();
@@ -320,15 +289,11 @@ void App::DrawPlaybackControls()
 
     if (ImGui::ImageButton("list-music", listMusicImage, ImVec2(24, 24)) || (ImGui::IsKeyPressed(ImGuiKey_P) && ImGui::IsKeyDown(ImGuiKey_LeftCtrl)))
     {
-        if (_isCollapsed)
+        TogglePlaylist();
+        if (collapsedHeight)
         {
-            SetWindowHeight(expandedHeight);
+            playlistMode = ePlaylistMode::Playlist;
         }
-        else
-        {
-            SetWindowHeight(collapsedHeight);
-        }
-        _isCollapsed = !_isCollapsed;
     }
 
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -340,6 +305,8 @@ void App::DrawPlaybackControls()
 
     if (ImGui::ImageButton("settings", settingsImage, ImVec2(24, 24)))
     {
+        EnsurePlaylistVisible();
+        playlistMode = ePlaylistMode::Settings;
     }
 
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -782,6 +749,43 @@ void App::DrawFileSelector()
 
         openFolder.clear();
     }
+}
+
+void App::DrawSettings()
+{
+    // Playlist
+    ImGui::BeginChild("settings", ImVec2(0, -50.0f), true, ImGuiWindowFlags_NoSavedSettings);
+    {
+    }
+    ImGui::EndChild();
+
+    if (ImGui::Button("Close"))
+    {
+        playlistMode = ePlaylistMode::Playlist;
+    }
+}
+
+void App::EnsurePlaylistVisible()
+{
+    if (_isCollapsed)
+    {
+        SetWindowHeight(expandedHeight);
+    }
+
+    _isCollapsed = !_isCollapsed;
+}
+
+void App::TogglePlaylist()
+{
+    if (_isCollapsed)
+    {
+        SetWindowHeight(expandedHeight);
+    }
+    else
+    {
+        SetWindowHeight(collapsedHeight);
+    }
+    _isCollapsed = !_isCollapsed;
 }
 
 void App::OpenSelectedFile()

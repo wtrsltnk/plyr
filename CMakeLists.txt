@@ -22,6 +22,7 @@ add_executable(plyr
     src/glad.c
     src/program.cpp
     src/vertexarray.cpp
+    src/default-icons.cpp
 )
 
 if (WIN32)
@@ -43,6 +44,7 @@ target_include_directories(plyr
     PRIVATE
         "include"
         "thirdparty/minimp3/include"
+        "thirdparty/tomykaira"
         "${PROJECT_BINARY_DIR}"
 )
 
@@ -55,10 +57,26 @@ target_link_libraries(plyr
 
 # Test/diagnostic executables
 add_executable(check_file
-    check_file.c
+    src/check_file.c
 )
 
 add_executable(check_after_id3
-    check_after_id3.c
+    src/check_after_id3.c
 )
 
+add_executable(make_base64_image_header
+    src/make_base64_image_header.cpp
+)
+
+target_compile_features(make_base64_image_header
+    PRIVATE
+        cxx_nullptr
+        cxx_std_23
+)
+
+target_include_directories(make_base64_image_header
+    PRIVATE
+        "include"
+        "thirdparty/tomykaira"
+        "${PROJECT_BINARY_DIR}"
+)
