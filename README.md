@@ -2,6 +2,8 @@
 
 A sleek, minimalist MP3 player built with modern C++ that brings back the joy of simple, focused music playback.
 
+![Screenshot](screenshot.png)
+
 ## ✨ Features
 
 ### 🎧 Core Playback
